@@ -1,14 +1,50 @@
-# **Inmo-leads**
+# **🏠 Inmo-leads**
+**Plataforma de captación y análisis de leads para una promoción inmobiliaria de pisos y VPO.** Automatiza la captura de contactos y compara el comportamiento de quienes compran y quienes no, con una vista distinta según el responsable (marketing o comercial).
+
+> Proyecto de portfolio, inspirado en un caso real del sector inmobiliario. **Todos los datos son ficticios.**
+
+<details>
+<summary>👩‍💻 Sobre mí</summary>
 Hola !! Soy Belén, estudié un FP Superior de Desarrollo de Aplicaciones Multiplataforma y después una especialización en IA y Big Data. 
+
 Hoy he tenido una entrevista para un perfil de "desarrollador multiusos" que me ha dado una idea para un nuevo proyecto.
 
 Creare desde cero una web inmobiliaria que automatizará la captación de clientes analizando quién compra y quién no, y qué diferencia hay entre unos y otros.
 Hacerlo todo con diseño web y enviar al cliente la vista que necesite cada responsable.
 
 El objetivo es una demo desde cero (el desarrollo, aprendizaje y despliegue será gratutito), pasando por todo el proceso hasta desplegarla, para volver a familiarizarme con el diseño web.
+</details>
 
-## Comenzando ... 🚀
-### **1. El stack elegido 📋**
+
+
+## 📌 Estado del proyecto
+
+- [x] Estructura del monorepo (backend + frontend)
+- [x] Backend FastAPI arrancando con documentación automática
+- [x] Esqueleto del frontend con Next.js
+- [x] PostgreSQL local con Docker
+- [ ] Modelos de datos y endpoints (Promoción, Lead, Evento)
+- [ ] Web pública con ficha de piso y formulario de contacto
+- [ ] Captación automatizada con email de confirmación
+- [ ] Tracking de eventos (visitas, clics, envíos de formulario)
+- [ ] Panel de análisis (embudo y comparativa compradores / no compradores)
+- [ ] Login con dos roles (marketing y comercial)
+- [ ] Despliegue (Vercel + Render + Neon)
+- [ ] CI con GitHub Actions
+
+
+
+## ✨ Qué incluirá
+
+- **Web pública** con ficha de cada promoción y formulario de contacto.
+- **Captación automatizada**: el lead se guarda en la base de datos y se envía un email automático.
+- **Tracking de eventos**: visitas, clics y envíos de formulario.
+- **Panel de análisis** con embudo de conversión y comparativa entre compradores y no compradores, con vistas distintas para marketing y comercial.
+
+
+
+## 🧰 Stack
+
 | Capa  | Tecnología | Por qué |
 |-----------|-----------|-----------|
 | Frontend | *Next.js + TypeScript* | Es lo más pedido para sustituir WordPress, y TypeScript es casi un requisito en ofertas actuales. Da SEO bueno, que importa mucho en una inmobiliaria. |
@@ -18,41 +54,48 @@ El objetivo es una demo desde cero (el desarrollo, aprendizaje y despliegue ser�
 | Repositorio | *Git-Hub* | Mi gran compañero durante estos años |
 | Entorno de Desarrollo | *Visual Studio Code* | Un entorno versatil que facilita el desarrollo |
 
-### **2. ¿Qué se va a construir y en cuanto tiempo?**
-Una mini plataforma de captación de una promoción de pisos y VPO, con datos ficticios, que incluye:
-
-- Una web pública con ficha de piso y formulario de contacto.
-Captación automatizada: guarda el lead en la base de datos y envía un email automático.
-- Tracking de eventos: visitas, clics y envíos de formulario.
-- Un panel de análisis con embudo de conversión y comparativa entre compradores y no compradores, con vistas distintas según el responsable (marketing o comercial).
-
-| Día  | Qué hago | Día  | Qué hago |
-|-----------|-----------|-----------|-----------|
-| 1º  | Requisitos, wireframes en Figma, estructura del repositorio y landing en Next.js | 4º  | Panel de análisis con gráficas y login sencillo con dos roles |
-| 2º  | FastAPI + PostgreSQL: modelos Promoción, Lead y Evento, endpoints y Docker | 5º  | Despliegue, CI con GitHub Actions, README con capturas y revisión con Lighthouse |
-| 3º  | Formulario conectado a la API, tracking de eventos y email automático |  |  |
 
 
-<br>
+## 🏗️ Arquitectura
 
-***¿Cómo aprendo lo nuevo?***
-- Next.js: el curso oficial Learn Next.js.
-- TypeScript: el handbook oficial y freeCodeCamp.
-- FastAPI y SQLModel: su documentación oficial.
-- Docker y GitHub Actions: la documentación oficial.
-<br>
-<br>
+```mermaid
+flowchart LR
+    A[Navegador del usuario] --> B["Frontend<br/>Next.js · :3000"]
+    B -->|"peticiones HTTP (JSON)"| C["Backend<br/>FastAPI · :8000"]
+    C -->|consultas SQL| D[("PostgreSQL<br/>:5432")]
+```
 
-## Pre-instalaciones y creación del proyecto
-### Estructura del proyecto
+| Componente | Tecnología | Responsabilidad |
+|---|---|---|
+| Frontend | Next.js + TypeScript | Renderizar la web pública (promociones, formulario de contacto) y el panel de análisis |
+| Backend | FastAPI + SQLModel | Exponer una API REST, validar datos, aplicar reglas de negocio y calcular métricas |
+| Base de datos | PostgreSQL (Docker en local) | Persistir promociones, leads y eventos |
+
+Separo frontend y backend para poder modificar el diseño sin tocar la lógica ni los datos, y al revés. Además, la misma API puede servir a otras interfaces, cada parte se despliega y escala por separado y cada una usa el lenguaje más adecuado.
+
+### **Comunicación mediante API REST**
+
+El backend expone *endpoints*: direcciones a las que el frontend envía peticiones HTTP. El método indica la acción, y los datos viajan en formato JSON.
+
+| Método | Acción | Ejemplo (planificado) |
+|---|---|---|
+| `GET` | Consultar datos | `GET /promociones` devuelve la lista de promociones |
+| `POST` | Crear un registro | `POST /leads` guarda un contacto del formulario |
+| `PATCH` | Modificar un registro | Marcar un lead como comprador |
+| `DELETE` | Eliminar un registro | Borrar un lead |
+
+
+
+## 📁 Estructura del repositorio
 ```text
 inmo-leads/
 ├── 📁 backend/                ← FastAPI + uv
 |   ├── 📁 __pycache__
 |   ├── 📁 .venv               ← Entorno virtual
+|   ├── 📄 .env.example        ← Ejemplo de variables de entorno
 |   ├── 📄 .python-versiom
-|   ├── 📄 main.py
-|   ├── 📄 pyproject.toml      ← Ficha del proyecto back(librerías)
+|   ├── 📄 main.py             ← Aplicación FastAPI
+|   ├── 📄 pyproject.toml      ← Ficha del proyecto back (dependencias)
 |   └── 📄 uv.lock
 |
 ├── 📁 frontend/               ← Next.js + TypeScript
@@ -67,7 +110,7 @@ inmo-leads/
 |   ├── 📄 next-env.d.ts
 |   ├── 📄 next.config.ts
 |   ├── 📄 package-lock.json
-|   ├── 📄 package.json        ← Ficha del proyecto font (librerías)
+|   ├── 📄 package.json        ← Ficha del proyecto font (dependencias)
 |   └── 📄 tsconfig.json
 |
 ├── docker-compose.yml         ← PostgreSQL local para desarrollar
@@ -78,6 +121,72 @@ inmo-leads/
 |   ├── __pycache__
 ├──
 ```
+<details>
+<summary>🚀 Cómo ejecutarlo en local</summary>
+
+
+**Requisitos:** Git, Node.js (LTS), [uv](https://docs.astral.sh/uv/), Docker Desktop.
+
+```powershell
+# 1. Clonar el repositorio
+git clone https://github.com/belenmrqz/Inmo-leads.git
+cd Inmo-leads
+
+# 2. Variables de entorno
+Copy-Item backend/.env.example backend/.env
+
+# 3. Base de datos (con Docker Desktop abierto)
+docker compose up -d
+```
+
+Después, en **dos terminales distintas**:
+
+```powershell
+# Terminal 1 · Backend  →  http://127.0.0.1:8000  (documentación en /docs)
+cd backend
+uv sync
+uv run fastapi dev main.py
+```
+
+```powershell
+# Terminal 2 · Frontend  →  http://localhost:3000
+cd frontend
+npm install
+npm run dev
+```
+</details>
+
+
+
+
+
+## 🗺️ Hoja de ruta
+Una mini plataforma de captación de una promoción de pisos y VPO, con datos ficticios, que incluye:
+
+- Una web pública con ficha de piso y formulario de contacto.
+Captación automatizada: guarda el lead en la base de datos y envía un email automático.
+- Tracking de eventos: visitas, clics y envíos de formulario.
+- Un panel de análisis con embudo de conversión y comparativa entre compradores y no compradores, con vistas distintas según el responsable (marketing o comercial).
+
+| Día  | Qué hago | Día  | Qué hago |
+|-----------|-----------|-----------|-----------|
+| 1º  | Requisitos, wireframes en Figma, estructura del repositorio y landing en Next.js | 4º  | Panel de análisis con gráficas y login sencillo con dos roles |
+| 2º  | FastAPI + PostgreSQL: modelos Promoción, Lead y Evento, endpoints y Docker | 5º  | Despliegue, CI con GitHub Actions, README con capturas y revisión con Lighthouse |
+| 3º  | Formulario conectado a la API, tracking de eventos y email automático |  |  |
+
+
+### 📚 Cómo estoy aprendiendo lo nuevo (gratis)
+
+- **Next.js:** curso oficial [Learn Next.js](https://nextjs.org/learn)
+- **TypeScript:** [Handbook oficial](https://www.typescriptlang.org/docs/handbook/intro.html) y [freeCodeCamp](https://www.freecodecamp.org/)
+- **FastAPI y SQLModel:** [documentación de FastAPI](https://fastapi.tiangolo.com/) y [de SQLModel](https://sqlmodel.tiangolo.com/)
+- **Docker y GitHub Actions:** [Docker Docs](https://docs.docker.com/) y [GitHub Actions](https://docs.github.com/actions)
+
+<br>
+
+## Pre-instalaciones y creación del proyenhcto
+<details>
+<summary>¿Cómo monté el proyecto?</summary>
 
 ### 1. Instalaciones en PowerShell y creación
 ```powershell
@@ -198,3 +307,6 @@ Para que quien clone tu repo sepa qué datos hacen falta, subes también un arch
 | _ESLint_ | Revisa tu código frontend mientras escribes |
 | _Tailwind CSS IntelliSense_ | Te sugiere las clases de Tailwind al escribirlas |
 | _Docker_ | Muestra tus contenedores desde VS Code |
+
+</details>
+
