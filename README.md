@@ -23,7 +23,7 @@ El objetivo es una demo desde cero (el desarrollo, aprendizaje y despliegue ser�
 - [x] Backend FastAPI arrancando con documentación automática
 - [x] Esqueleto del frontend con Next.js
 - [x] PostgreSQL local con Docker
-- [ ] Modelos de datos y endpoints (Promoción, Lead, Evento)
+- [x] Modelos de datos y endpoints (Promoción, Lead, Evento)
 - [ ] Web pública con ficha de piso y formulario de contacto
 - [ ] Captación automatizada con email de confirmación
 - [ ] Tracking de eventos (visitas, clics, envíos de formulario)
@@ -91,10 +91,21 @@ El backend expone *endpoints*: direcciones a las que el frontend envía peticion
 inmo-leads/
 ├── 📁 backend/                ← FastAPI + uv
 |   ├── 📁 __pycache__
+|   ├── 📁 .ruff_cache
 |   ├── 📁 .venv               ← Entorno virtual
+|   ├── 📁 migrations
+|   |   ├── 📁 __pycache__
+|   |   ├── 📁 versions        ← Una migración por cada cambio
+|   |   ├── 📄env.py              ← conecta Alembic con mis modelos y mi base de datos
+|   |   └── 📄script.py.mako      ← plantilla con la que se generan las migraciones
+|   |
 |   ├── 📄 .env.example        ← Ejemplo de variables de entorno
 |   ├── 📄 .python-versiom
+|   ├── 📄 alembic.ini         ← Configuración de Alembic
+|   ├── 📄 config.py           ← Lee la configuración desde .env
+|   ├── 📄 database.py         ← Conexión a PostgreSQL y sesiones
 |   ├── 📄 main.py             ← Aplicación FastAPI
+|   ├── 📄 models.py           ← modelos: las tablas escritas en Python
 |   ├── 📄 pyproject.toml      ← Ficha del proyecto back (dependencias)
 |   └── 📄 uv.lock
 |
@@ -317,20 +328,146 @@ Para que quien clone tu repo sepa qué datos hacen falta, subes también un arch
 # 📓 Diario de desarrollo
 
 ## **Modelado de Datos**
-### **Paso 1: Configuración**
+<details>
+<summary><b>Explicación de la Base de Datos y sus pasos</b></summary>  
+La base de datos tiene 5 tablas.
+La persona ('clientes') está separada de su interés en una promoción ('oportunidad'), de modo que un mismo cliente puede terner varias oportunidades sin repetir sus datos.
 
+```mermaid
+erDiagram
+  CLIENTES ||--o{ OPORTUNIDADES : "se interesa en"
+  PROMOCIONES ||--o{ OPORTUNIDADES : "recibe"
+  EMPLEADOS ||--o{ OPORTUNIDADES : "gestiona"
+  PROMOCIONES ||--o{ EVENTOS : "registra"
+  CLIENTES |o--o{ EVENTOS : "genera"
+  EMPLEADOS {
+    int id PK
+    string nombre
+    string email
+    string rol
+    string especialidad
+    boolean activo
+  }
+  CLIENTES {
+    int id PK
+    string nombre
+    string email
+    string telefono
+    string origen
+    timestamp creado_en
+  }
+  PROMOCIONES {
+    int id PK
+    string nombre
+    string descripcion
+    string zona
+    boolean es_vpo
+    decimal precio_desde
+    int num_viviendas
+  }
+  OPORTUNIDADES {
+    int id PK
+    int cliente_id FK
+    int promocion_id FK
+    int empleado_id FK
+    string motivo
+    string estado
+    string mensaje
+    timestamp creado_en
+  }
+  EVENTOS {
+    int id PK
+    string session_id
+    int promocion_id FK
+    int cliente_id FK
+    string tipo
+    timestamp creado_en
+  }
+```
 
+| Tabla | Qué guarda |
+|---|---|
+| `clientes` | La persona que contacta: nombre, email, teléfono y origen (Instagram, Google...) |
+| `empleados` | Quienes usan el panel. Su `rol` decide qué vista ven y su `especialidad` qué casos reciben |
+| `promociones` | Las promociones de viviendas, indicando si son VPO |
+| `oportunidades` | El interés de un cliente en una promoción: motivo, estado y empleado asignado |
+| `eventos` | Acciones del visitante en la web (visita, clic, envío de formulario), identificadas por sesión |
+ 
 
-### **Paso 2: Conexión**
+ ### Reparto de casos según motivo
+ Cuando alguien envía el formulario, elige un **motivo**. 
+ El backend asgina el caso a un empleado activo cuya 'especialidad coincide con ese motivo. 
 
+ | Motivo | Significado |
+|---|---|
+| `todo_tipo` | Interesado en pisos de cualquier tipo |
+| `solo_vpo` | Interesado únicamente en VPO |
+| `asesoramiento` | Necesita asesoramiento |
+| `vender` | Quiere vender su piso |
+ 
+`vender` es un caso especial: esa persona no es compradora, no tiene una promoción asociada (por eso `promocion_id` es opcional) y se excluirá de la comparativa entre compradores y no compradores.
+ 
+**Estados de una oportunidad:** `nuevo`, `contactado`, `visita`, `reserva`, `comprador` y `descartado`.
 
+### ¿Qué se ha creado y como?
+En este paso paso del diseño de la base de datos a tablas reales en PostgreSQL. Se hace con SQLModel (las tablas escritas como clases de Python) y Alembic (el historial de cambios de la base de datos).
 
-### **Paso 3: Modelos**
+Archivos que se han creado nuevos: 
+- **`backend/config.py`** → Configuración, Lee la variable `DATABASE_URL` desde `.env` usando `pydantic-settings`. Expone un único objeto `settings` que el resto del código importa, así las credenciales nunca están escritas en el código.
+- **`backend/database.py`** → Conexión, Crea el `engine`, el objeto que manteine la conexión con PostgreSQL, y la función `get_session()`, que entrega una sesión de base de datos y la cierra al terminar. Más adelante los endpoints de FastAPI la recibirán como dependencia.
+- **`backend/models.py`** →
 
+### ***Alembic: migraciones***
+Una migración es un archivob que describe un cambio en la estructura de la bbdd.
+Así el esquema queda versionado en GitHub, igual que el código, y cualquiera puede reproducirlo. 
 
+He creado `alembic.ini` y la carpeta `migrations/` con el comando _"uv run alembic init migrations"_, luego ajuste los siguientes parámetros:
+-  En `migrations/env.py` importé `SQLModel`, `settings` y `models`. Importar `models` es lo que permite a Alembic conocer mis tablas.
+- En `env.py` cambié `target_metadata = None` por `target_metadata = SQLModel.metadata`, para que Alembic compare contra mis modelos.
+-  En `env.py`, tras `config = context.config`, añadí `config.set_main_option("sqlalchemy.url", settings.database_url)`. Así Alembic usa la base de datos de mi `.env` en lugar de la dirección de ejemplo de `alembic.ini`.
+- En `migrations/script.py.mako` añadí `import sqlmodel`; sin él, las migraciones generadas no reconocen los campos de texto de SQLModel.
 
-### **Paso 4: Alembic**
+Después generé y apliqué mi primera migración:
 
+```powershell
+uv run alembic revision --autogenerate -m "tablas iniciales"
+uv run alembix upgrade head
+```
+| Comando | Qué hace |
+|---|---|
+| `revision --autogenerate` | Compara mis modelos con la base de datos y escribe un archivo en `migrations/versions/` con las instrucciones para crear las tablas (`upgrade`) y para deshacerlas (`downgrade`) |
+| `upgrade head` | Ejecuta las migraciones pendientes hasta la última versión |
+ 
+Alembic crea además una tabla `alembic_version`, donde guarda en qué versión está la base de datos.
 
+<br>
 
-### **Paso 5: Migración**
+**¿Cómo cambiaré la base de datos a partir de ahora?**
+ 
+1. Modifico `models.py` (por ejemplo, añado un campo).
+2. Genero una migración: `uv run alembic revision --autogenerate -m "descripción del cambio"`.
+3. Reviso el archivo generado.
+4. La aplico: `uv run alembic upgrade head`.
+Comandos útiles de Alembic:
+ 
+| Comando | Para qué |
+|---|---|
+| `uv run alembic current` | Ver en qué versión está la base de datos |
+| `uv run alembic history` | Ver el historial de migraciones |
+| `uv run alembic downgrade -1` | Deshacer la última migración |
+
+<br>
+ 
+**Ruff: revisión del código:**
+
+Ruff revisa el estilo del código. Dos comandos que uso antes de cada commit:
+ 
+```powershell
+uv run ruff check .          # muestra los avisos
+uv run ruff check . --fix    # corrige automáticamente los que se pueden
+```
+ 
+Me avisó de dos cosas: que `datetime.UTC` sustituye a `timezone.utc` desde Python 3.11, y que los `import` deben ir ordenados (primero librerías externas, luego los archivos propios).
+</details>
+
+## **Modelado de Datos**
