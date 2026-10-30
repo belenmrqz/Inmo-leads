@@ -184,9 +184,9 @@ Captación automatizada: guarda el lead en la base de datos y envía un email au
 
 <br>
 
-## Pre-instalaciones y creación del proyenhcto
+## Pre-instalaciones y creación del proyecto
 <details>
-<summary>¿Cómo monté el proyecto?</summary>
+<summary><b>¿Cómo monté el proyecto?</b></summary>
 
 ### 1. Instalaciones en PowerShell y creación
 ```powershell
@@ -310,3 +310,27 @@ Para que quien clone tu repo sepa qué datos hacen falta, subes también un arch
 
 </details>
 
+<br>
+<br>
+<br>
+
+# 📓 Diario de desarrollo
+
+## **Modelado de Datos**
+### **Paso 1: Configuración**
+
+
+
+### **Paso 2: Conexión**
+
+
+
+### **Paso 3: Modelos**
+
+
+
+### **Paso 4: Alembic**
+
+
+
+### **Paso 5: Migración**
