@@ -3,7 +3,7 @@ from decimal import Decimal
 from sqlmodel import SQLModel
 
 
-class PromocionRead(SQLModel):
+class PromocionRead(SQLModel): # Define qué campos devuelve la API
     id: int
     nombre: str
     descripcion: str | None

@@ -5,7 +5,12 @@ from sqlmodel import Session, select
 from database import engine
 from models import Empleado, Promocion, RolEmpleado
 
-PROMOCIONES = [
+# - - - - - - - - - - - - - - - - - - - - - -
+# SCRIPT QUE INSERTA PROMOCIONES Y EMPLEADOS 
+# - - - - - - - - - - - - - - - - - - - - - -
+
+
+PROMOCIONES = [ # Diccionario de Promociones
     {
         "nombre": "Residencial Los Olivos",
         "descripcion": "Viviendas de protección oficial con zonas verdes y garaje.",
@@ -40,7 +45,7 @@ PROMOCIONES = [
     },
 ]
 
-EMPLEADOS = [
+EMPLEADOS = [ # Diccionario de Empleados
     {"nombre": "Carlos Ruiz", "email": "carlos@inmo.test",
      "rol": RolEmpleado.comercial.value, "especialidad": "todo_tipo"},
     {"nombre": "Lucía Pérez", "email": "lucia@inmo.test",
@@ -64,5 +69,7 @@ def poblar() -> None:
     print("Datos de prueba cargados")
 
 
+# El script solo se ejecuta cuando lo lanzo yo directamente, 
+# no cuando otro archivo lo importa
 if __name__ == "__main__":
     poblar()
