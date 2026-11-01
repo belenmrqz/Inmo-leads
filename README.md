@@ -3,7 +3,7 @@
 
 > Proyecto de portfolio, inspirado en un caso real del sector inmobiliario. **Todos los datos son ficticios.**
 
-<details>
+<details open>
 <summary>👩‍💻 Sobre mí</summary>
 Hola !! Soy Belén, estudié un FP Superior de Desarrollo de Aplicaciones Multiplataforma y después una especialización en IA y Big Data. 
 
@@ -24,6 +24,8 @@ El objetivo es una demo desde cero (el desarrollo, aprendizaje y despliegue ser�
 - [x] Esqueleto del frontend con Next.js
 - [x] PostgreSQL local con Docker
 - [x] Modelos de datos y endpoints (Promoción, Lead, Evento)
+- [x] Endpoints de promociones (`GET /promociones`, `GET /promociones/{id}`)
+- [ ] Endpoints de clientes, oportunidades y eventos
 - [ ] Web pública con ficha de piso y formulario de contacto
 - [ ] Captación automatizada con email de confirmación
 - [ ] Tracking de eventos (visitas, clics, envíos de formulario)
@@ -89,15 +91,18 @@ El backend expone *endpoints*: direcciones a las que el frontend envía peticion
 ## 📁 Estructura del repositorio
 ```text
 inmo-leads/
-├── 📁 backend/                ← FastAPI + uv
+├── 📁 backend/                   ← FastAPI + uv
 |   ├── 📁 __pycache__
 |   ├── 📁 .ruff_cache
-|   ├── 📁 .venv               ← Entorno virtual
+|   ├── 📁 .venv                  ← Entorno virtual
 |   ├── 📁 migrations
 |   |   ├── 📁 __pycache__
-|   |   ├── 📁 versions        ← Una migración por cada cambio
-|   |   ├── 📄env.py              ← conecta Alembic con mis modelos y mi base de datos
-|   |   └── 📄script.py.mako      ← plantilla con la que se generan las migraciones
+|   |   ├── 📁 versions           ← Una migración por cada cambio
+|   |   ├── 📄 env.py              ← conecta Alembic con mis modelos y mi base de datos
+|   |   └── 📄 script.py.mako      ← plantilla con la que se generan las migraciones
+│   ├── 📁 routers/                ← endpoints agrupados por tema
+│   │   ├── 📄 __init__.py         ← vacío: marca la carpeta como paquete
+│   │   └── 📄 promociones.py      ← endpoints de promociones
 |   |
 |   ├── 📄 .env.example        ← Ejemplo de variables de entorno
 |   ├── 📄 .python-versiom
@@ -107,6 +112,8 @@ inmo-leads/
 |   ├── 📄 main.py             ← Aplicación FastAPI
 |   ├── 📄 models.py           ← modelos: las tablas escritas en Python
 |   ├── 📄 pyproject.toml      ← Ficha del proyecto back (dependencias)
+│   ├── 📄 schemas.py          ← formato de salida de la API
+│   ├── 📄 seed.py             ← datos de prueba
 |   └── 📄 uv.lock
 |
 ├── 📁 frontend/               ← Next.js + TypeScript
@@ -132,7 +139,7 @@ inmo-leads/
 |   ├── __pycache__
 ├──
 ```
-<details>
+<details open>
 <summary>🚀 Cómo ejecutarlo en local</summary>
 
 
@@ -196,7 +203,7 @@ Captación automatizada: guarda el lead en la base de datos y envía un email au
 <br>
 
 ## Pre-instalaciones y creación del proyecto
-<details>
+<details open>
 <summary><b>¿Cómo monté el proyecto?</b></summary>
 
 ### 1. Instalaciones en PowerShell y creación
@@ -328,7 +335,7 @@ Para que quien clone tu repo sepa qué datos hacen falta, subes también un arch
 # 📓 Diario de desarrollo
 
 ## **Modelado de Datos**
-<details>
+<details open>
 <summary><b>Explicación de la Base de Datos y sus pasos</b></summary>  
 La base de datos tiene 5 tablas.
 La persona ('clientes') está separada de su interés en una promoción ('oportunidad'), de modo que un mismo cliente puede terner varias oportunidades sin repetir sus datos.
@@ -470,4 +477,46 @@ uv run ruff check . --fix    # corrige automáticamente los que se pueden
 Me avisó de dos cosas: que `datetime.UTC` sustituye a `timezone.utc` desde Python 3.11, y que los `import` deben ir ordenados (primero librerías externas, luego los archivos propios).
 </details>
 
-## **Modelado de Datos**
+## **Datos de prueba y primer endpoint**
+El flujo seguido es: Datos en la BBDD → endpoint en la API → respuesta en el navegador. 
+Con esto queda comprobado que PostgreSQL, los modelos y FastAPI funcionan juntos. 
+
+### ¿Cuál es el recorrido de una petición?
+Si abro, por ejemplo, la dirección `ttp://127.0.0.1:8000/promociones` ocurre lo siguiente:
+
+```text
+Navegador  →  GET /promociones
+   ↓
+main.py        enruta la petición al router de promociones (por su prefijo)
+   ↓
+routers/promociones.py    ejecuta la función listar_promociones
+   ↓
+database.py    get_session() abre una sesión con PostgreSQL
+   ↓
+PostgreSQL     devuelve las filas de la tabla promociones
+   ↓
+schemas.py     PromocionRead decide qué campos salen y los convierte a JSON
+   ↓
+Navegador  ←  respuesta JSON
+```
+### ¿Qué se ha creado y como?
+
+Archivos que se han creado nuevos: 
+- **`backend/seed.py`** → Script que inserta promociones y empleados ficticios para tener con qué trabajar. Se ejecuta con el comando `uv run python seed.py`.
+- **`backend/schemas.py`** → Formato de salida. Con el método `PromocionRead` define qué campos devuelve la API. Es una clase SQLModel que no crea ninguna tabla, solo describe datos. Separa el modelo (la tabla) del schema (lo que ve el exterior) permitirá ocultar campos internos más adelante.
+- **`backend/routers/promociones.py`** → Endpoints, dónde el sistema recibe solicitudes. Un router agrupa los endpoints de un mismo tema. necesita un archivo `__init__`.py vacío para que Python la reconozca como paquete.
+- **`backend/main.py`** → Crea la aplicación y registra el router con `app.include_router(...)`. Mantiene el endpoint `/health`, que sirve para comprobar que el servidor está vivo (y más adelante, para el despliegue).
+
+| Endpoint disponibles| Resultado |
+| -------- | -------- |
+| `GET /healt` | `{"status": "ok"}` |
+| `GET /promociones` | Lista de todas las promociones |
+| `GET /promociones?es_vpo=true` | Solo las promociones VPO |
+| `GET /promociones/{id}` | Una promoción; error 404 si no existe |
+
+Códigos de respuesta que aparecen: 
+- 200 (todo correcto)
+- 404 (no existe)
+- 422 (dato inválido, por ejemplo /promociones/abc, porque FastAPI valida que el id sea un entero).
+
+FastAPI genera una documentación interactiva en http://127.0.0.1:8000/docs. Desde ahí se puede probar cada endpoint con el botón Try it out, sin escribir código.
