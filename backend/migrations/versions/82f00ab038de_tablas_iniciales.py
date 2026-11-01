@@ -4,6 +4,9 @@ Revision ID: 82f00ab038de
 Revises: 
 Create Date: 2026-10-30 17:30:02.714180
 
+Es la primera migración: la receta que crea mis cinco tablas desde cero. Alembic la escribió 
+comparando mis modelos con una base de datos vacía.
+
 """
 from collections.abc import Sequence
 
