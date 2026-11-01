@@ -5,10 +5,18 @@ from enum import Enum
 from sqlalchemy import DateTime
 from sqlmodel import Field, SQLModel
 
+# DESCRIBE LAS 5 TABLAS COMO CLASES PYTHON
+# SQLModel combina las librerías SQLAlchemy y Pydantic y por esto una misma clase vale 
+# para definir una tabla y para validar la información
 
-def ahora() -> datetime:
+def ahora() -> datetime: # Devuelve la fecha y hora actuales en UTC.
     return datetime.now(UTC)
 
+
+
+# - - - - - - - - - - - - - - - - - - 
+# LOS ENUMN
+# - - - - - - - - - - - - - - - - - - 
 
 class Motivo(str, Enum):
     todo_tipo = "todo_tipo"
@@ -37,7 +45,12 @@ class TipoEvento(str, Enum):
     clic_cta = "clic_cta"
     formulario_enviado = "formulario_enviado"
 
+# - - - - - - - - - - - - - - - - - - 
 
+
+# - - - - - - - - - - - - - - - - - - 
+# LAS TABLAS
+# - - - - - - - - - - - - - - - - - - 
 class Empleado(SQLModel, table=True):
     __tablename__ = "empleados"
 
@@ -94,3 +107,5 @@ class Evento(SQLModel, table=True):
     cliente_id: int | None = Field(default=None, foreign_key="clientes.id", index=True)
     tipo: str = Field(index=True)
     creado_en: datetime = Field(default_factory=ahora, sa_type=DateTime(timezone=True))
+
+# - - - - - - - - - - - - - - - - - - 
