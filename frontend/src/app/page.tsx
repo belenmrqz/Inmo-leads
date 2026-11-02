@@ -1,4 +1,5 @@
 import { getPromociones } from "../lib/api";
+export const maxDuration = 60;
 
 const euros = new Intl.NumberFormat("es-ES", {
   style: "currency",
