@@ -1,38 +1,58 @@
 # **🏠 Inmo-leads**
-**Plataforma de captación y análisis de leads para una promoción inmobiliaria de pisos y VPO.** Automatiza la captura de contactos y compara el comportamiento de quienes compran y quienes no, con una vista distinta según el responsable (marketing o comercial).
+**Plataforma de captación y análisis de leads para una promoción inmobiliaria de pisos y VPO.** 
+Automatiza la captura de contactos y compara el comportamiento de quienes compran y quienes no, con una vista distinta según el responsable (marketing o comercial).
 
 > Proyecto de portfolio, inspirado en un caso real del sector inmobiliario. **Todos los datos son ficticios.**
 
-<details open>
+## 🔗 Demo en vivo
+
+| | Enlace |
+|---|---|
+| 🌐 **Web** (Next.js en Vercel) | https://inmo-leads-umber.vercel.app |
+| ⚙️ **API** (FastAPI en Render) | https://inmo-leads-api.onrender.com |
+| 📖 **Documentación de la API** | https://inmo-leads-api.onrender.com/docs |
+
+> > ⏳ El backend está en un plan gratuito: tras un rato sin uso se "duerme" y la **primera visita puede tardar cerca de un minuto** en responder. Después va con normalidad.
+
+<details>
 <summary>👩‍💻 Sobre mí</summary>
 Hola !! Soy Belén, estudié un FP Superior de Desarrollo de Aplicaciones Multiplataforma y después una especialización en IA y Big Data. 
-
-Hoy he tenido una entrevista para un perfil de "desarrollador multiusos" que me ha dado una idea para un nuevo proyecto.
 
 Creare desde cero una web inmobiliaria que automatizará la captación de clientes analizando quién compra y quién no, y qué diferencia hay entre unos y otros.
 Hacerlo todo con diseño web y enviar al cliente la vista que necesite cada responsable.
 
 El objetivo es una demo desde cero (el desarrollo, aprendizaje y despliegue será gratutito), pasando por todo el proceso hasta desplegarla, para volver a familiarizarme con el diseño web.
+
+📫 GitHub: [@belenmrqz](https://github.com/belenmrqz)
+
 </details>
 
 
 
 ## 📌 Estado del proyecto
 
+**Hecho**
 - [x] Estructura del monorepo (backend + frontend)
 - [x] Backend FastAPI arrancando con documentación automática
 - [x] Esqueleto del frontend con Next.js
 - [x] PostgreSQL local con Docker
-- [x] Modelos de datos y endpoints (Promoción, Lead, Evento)
+- [x] Modelo de datos (5 tablas) y primera migración con Alembic
+- [x] Datos de prueba (`seed.py`)
 - [x] Endpoints de promociones (`GET /promociones`, `GET /promociones/{id}`)
+- [x] Web con el listado de promociones en tarjetas, conectada a la API
+- [x] **Despliegue en producción** (Vercel + Render con Docker + Neon)
+- [x] Código del backend comentado y explicado
+
+**Siguientes pasos**
+- [ ] Filtro por tipo (VPO / libre) y ficha de detalle de cada promoción
 - [ ] Endpoints de clientes, oportunidades y eventos
-- [ ] Web pública con ficha de piso y formulario de contacto
+- [ ] Formulario de contacto con reparto del caso al empleado según el motivo
 - [ ] Captación automatizada con email de confirmación
 - [ ] Tracking de eventos (visitas, clics, envíos de formulario)
 - [ ] Panel de análisis (embudo y comparativa compradores / no compradores)
 - [ ] Login con dos roles (marketing y comercial)
-- [ ] Despliegue (Vercel + Render + Neon)
 - [ ] CI con GitHub Actions
+<br>
 
 
 
@@ -54,17 +74,29 @@ El objetivo es una demo desde cero (el desarrollo, aprendizaje y despliegue ser�
 | Base de datos | *PostgreSQL* | 	Estándar del mercado |
 | Despliegue | *Vercel (web), Render con Docker (backend), Neon (base de datos)* | 	Gratis, y cubre Docker y CI/CD con GitHub Actions |
 | Repositorio | *Git-Hub* | Mi gran compañero durante estos años |
-| Entorno de Desarrollo | *Visual Studio Code* | Un entorno versatil que facilita el desarrollo |
+| Entorno de Desarrollo | *Visual Studio Code* | Un entorno versátil que facilita el desarrollo |
+| Herramientas | *uv, Ruff y Docker* | Gestión de dependencias Python, revisión de código y contenedores |
 
-
+<br>
 
 ## 🏗️ Arquitectura
 
+**En desarrollo (mi ordenador):**
+ 
 ```mermaid
 flowchart LR
     A[Navegador del usuario] --> B["Frontend<br/>Next.js · :3000"]
     B -->|"peticiones HTTP (JSON)"| C["Backend<br/>FastAPI · :8000"]
-    C -->|consultas SQL| D[("PostgreSQL<br/>:5432")]
+    C -->|consultas SQL| D[("PostgreSQL<br/>Docker · :5432")]
+```
+ 
+**En producción:**
+ 
+```mermaid
+flowchart LR
+    U[Usuario] --> V["Vercel<br/>Next.js"]
+    V -->|"HTTPS · JSON"| R["Render (Docker)<br/>FastAPI"]
+    R -->|SQL| N[("Neon<br/>PostgreSQL")]
 ```
 
 | Componente | Tecnología | Responsabilidad |
@@ -81,10 +113,33 @@ El backend expone *endpoints*: direcciones a las que el frontend envía peticion
 
 | Método | Acción | Ejemplo (planificado) |
 |---|---|---|
-| `GET` | Consultar datos | `GET /promociones` devuelve la lista de promociones |
-| `POST` | Crear un registro | `POST /leads` guarda un contacto del formulario |
+| `GET` | Consultar datos | `GET /promociones` devuelve la lista de promociones (**ya implementado**) |
+| `POST` | Crear un registro | `POST /leads` guarda un contacto del formulario (**planificado**) |
 | `PATCH` | Modificar un registro | Marcar un lead como comprador |
 | `DELETE` | Eliminar un registro | Borrar un lead |
+
+### **Recorrido de una petición**
+Si abro, por ejemplo, la dirección `http://127.0.0.1:8000/promociones` ocurre lo siguiente:
+ 
+```text
+Navegador  →  GET /promociones
+   ↓
+main.py        enruta la petición al router de promociones (por su prefijo)
+   ↓
+routers/promociones.py    ejecuta la función listar_promociones
+   ↓
+database.py    get_session() abre una sesión con PostgreSQL
+   ↓
+PostgreSQL     devuelve las filas de la tabla promociones
+   ↓
+schemas.py     PromocionRead decide qué campos salen y los convierte a JSON
+   ↓
+Navegador  ←  respuesta JSON
+```
+ 
+Y en la web, el frontend (Next.js) hace esa misma petición **desde su servidor** y entrega al navegador el HTML ya construido con las tarjetas.
+
+<br>
 
 
 
@@ -95,34 +150,39 @@ inmo-leads/
 |   ├── 📁 __pycache__
 |   ├── 📁 .ruff_cache
 |   ├── 📁 .venv                  ← Entorno virtual
-|   ├── 📁 migrations
+|   ├── 📁 migrations             ← Historial de cambios de la BBDD (Alembic)
 |   |   ├── 📁 __pycache__
 |   |   ├── 📁 versions           ← Una migración por cada cambio
-|   |   ├── 📄 env.py              ← conecta Alembic con mis modelos y mi base de datos
-|   |   └── 📄 script.py.mako      ← plantilla con la que se generan las migraciones
-│   ├── 📁 routers/                ← endpoints agrupados por tema
-│   │   ├── 📄 __init__.py         ← vacío: marca la carpeta como paquete
-│   │   └── 📄 promociones.py      ← endpoints de promociones
+|   |   ├── 🐍 env.py              ← Conecta Alembic con mis modelos y mi base de datos
+|   |   └── 📄 script.py.mako      ← Plantilla con la que se generan las migraciones
+│   ├── 📁 routers/                ← Endpoints agrupados por tema
+│   │   ├── 🐍 __init__.py         ← Vacío: marca la carpeta como paquete
+│   │   └── 🐍 promociones.py      ← Endpoints de promociones
 |   |
 |   ├── 📄 .env.example        ← Ejemplo de variables de entorno
 |   ├── 📄 .python-versiom
 |   ├── 📄 alembic.ini         ← Configuración de Alembic
-|   ├── 📄 config.py           ← Lee la configuración desde .env
-|   ├── 📄 database.py         ← Conexión a PostgreSQL y sesiones
-|   ├── 📄 main.py             ← Aplicación FastAPI
-|   ├── 📄 models.py           ← modelos: las tablas escritas en Python
+|   ├── 🐍 config.py           ← Lee la configuración desde .env
+|   ├── 🐍 database.py         ← Conexión a PostgreSQL y sesiones
+|   ├── 🐋 Dockerfile          ← Imagen del backend para producción
+|   ├── 🐍 main.py             ← Aplicación FastAPI
+|   ├── 🐍 models.py           ← Modelos: las tablas escritas en Python
 |   ├── 📄 pyproject.toml      ← Ficha del proyecto back (dependencias)
-│   ├── 📄 schemas.py          ← formato de salida de la API
-│   ├── 📄 seed.py             ← datos de prueba
+│   ├── 🐍 schemas.py          ← formato de salida de la API
+│   ├── 🐍 seed.py             ← Datos de prueba
 |   └── 📄 uv.lock
 |
 ├── 📁 frontend/               ← Next.js + TypeScript
 |   ├── 📁 .next
 |   ├── 📁 node_modules        ← Aquí se descargan las librerías
 |   ├── 📁 public              ← Imágenes y archivos estáticos
-|   └── 📁 src/app
-|       ├── 📄 layout.tsx     ← Estructura común a todas las páginas
-|       └── 📄 page.tsx       ← Página de inicio web
+│   ├── 📁 src/
+│   │   ├── 📁 app/
+│   │   │   ├── 📄 globals.css
+│   │   │   ├── 📄 layout.tsx      ← Estructura común a todas las páginas
+│   │   │   └── 📄 page.tsx        ← Página de inicio con las promociones
+│   │   └── 📁 lib/
+│   │       └── 📄 api.ts          ← Funciones que llaman a la API
 |   ├── 📄 .gitingore
 |   ├── 📄 eslint.confing-mjs
 |   ├── 📄 next-env.d.ts
@@ -131,15 +191,16 @@ inmo-leads/
 |   ├── 📄 package.json        ← Ficha del proyecto font (dependencias)
 |   └── 📄 tsconfig.json
 |
-├── docker-compose.yml         ← PostgreSQL local para desarrollar
+├── 🐋 docker-compose.yml     ← PostgreSQL local para desarrollar
 ├── .github/workflows/         ← CI (más adelante)
 ├── .gitignore                 ← Aquello que Git no deber subir
-└── README.md  
-
-|   ├── __pycache__
-├──
+└── 🛈 README.md  
 ```
-<details open>
+> No aparecen porque Git los ignora y no están en el repositorio: `backend/.env` (credenciales), `backend/.venv` (entorno virtual), `frontend/node_modules` (librerías), `frontend/.next` (compilación) y las carpetas `__pycache__` y `.ruff_cache`.
+ 
+<br>
+
+<details>
 <summary>🚀 Cómo ejecutarlo en local</summary>
 
 
@@ -186,13 +247,6 @@ Captación automatizada: guarda el lead en la base de datos y envía un email au
 - Tracking de eventos: visitas, clics y envíos de formulario.
 - Un panel de análisis con embudo de conversión y comparativa entre compradores y no compradores, con vistas distintas según el responsable (marketing o comercial).
 
-| Día  | Qué hago | Día  | Qué hago |
-|-----------|-----------|-----------|-----------|
-| 1º  | Requisitos, wireframes en Figma, estructura del repositorio y landing en Next.js | 4º  | Panel de análisis con gráficas y login sencillo con dos roles |
-| 2º  | FastAPI + PostgreSQL: modelos Promoción, Lead y Evento, endpoints y Docker | 5º  | Despliegue, CI con GitHub Actions, README con capturas y revisión con Lighthouse |
-| 3º  | Formulario conectado a la API, tracking de eventos y email automático |  |  |
-
-
 ### 📚 Cómo estoy aprendiendo lo nuevo (gratis)
 
 - **Next.js:** curso oficial [Learn Next.js](https://nextjs.org/learn)
@@ -202,8 +256,81 @@ Captación automatizada: guarda el lead en la base de datos y envía un email au
 
 <br>
 
-## Pre-instalaciones y creación del proyecto
-<details open>
+### 🧠 Decisiones técnicas
+ 
+- **FastAPI en lugar de Spring Boot:** conozco ambos, pero el análisis de datos con pandas es más natural en Python.
+- **Next.js con componentes de servidor:** la página pide los datos a la API desde el servidor y entrega el HTML ya construido. Es bueno para el SEO y evita exponer la dirección de la API en el navegador.
+- **Monorepo:** frontend y backend en un único repositorio, para que el proyecto completo se vea de un vistazo.
+- **Neon para la base de datos:** el PostgreSQL gratuito de Render caduca a los 30 días, y Neon ofrece un plan gratuito más estable para una demo.
+- **Valores permitidos como texto, no como `ENUM` de PostgreSQL:** simplifica las migraciones. La validación estricta se hará en la API.
+- **Separar modelo y schema:** `models.py` es la tabla y `schemas.py` lo que ve el exterior, para poder ocultar campos internos en el futuro.
+- **Configuración por variables de entorno:** el mismo código funciona en local y en producción sin tocarlo.
+
+<br>
+
+### 🌿 Flujo de trabajo con Git
+ 
+Trabajo con **una rama por funcionalidad**, que se integra en `main` mediante un *Pull Request*.
+ 
+| Rama | Para qué sirve |
+|---|---|
+| `main` | La versión estable del proyecto. Siempre debe funcionar, y de ella sale el despliegue |
+| `feat/nombre` | Una funcionalidad nueva |
+| `fix/nombre` | Corrección de un error |
+| `docs/nombre` | Solo documentación |
+ 
+**Ramas que he usado:** `feat/modelo-datos`, `feat/endpoint-promociones`, `aclaraciones_codigo` (comentar el código), `feat/frontend-promociones` y `feat/despliegue`.
+
+### 🌐 Despliegue en producción 
+
+<details>
+<summary>More</sumary>
+
+La demo está desplegada con tres servicios gratuitos, cada uno con una responsabilidad:
+
+| Servicio | Qué aloja | Configuración principal |
+|---|---|---|
+| **Neon** | Base de datos PostgreSQL | Región Frankfurt, conexión directa (sin *pooling*) |
+| **Render** | Backend FastAPI en Docker | Runtime Docker, *Root Directory* `backend`, región Frankfurt, *Health Check* en `/health` |
+| **Vercel** | Frontend Next.js | *Root Directory* `frontend`, despliegue automático con cada cambio en `main` |
+
+**Variables de entorno** (los valores nunca se suben al repositorio):
+
+| Servicio | Variable | Para qué sirve |
+|---|---|---|
+| Render | `DATABASE_URL` | Cadena de conexión a Neon. Empieza por `postgresql+psycopg://` porque mi código usa el driver `psycopg` |
+| Render | `CORS_ORIGINS` | Direcciones web autorizadas a llamar a la API, separadas por comas y **sin barra final** |
+| Vercel | `API_URL` | Dirección pública del backend en Render |
+
+**Cómo lo hice:**
+1. Creé el proyecto en **Neon** y copié su cadena de conexión cambiando el comienzo a `postgresql+psycopg://`.
+2. Apliqué las migraciones y los datos de prueba a Neon **desde mi ordenador**, definiendo `DATABASE_URL` solo para esos comandos. Funciona porque las variables del sistema tienen prioridad sobre el `.env` (ver `config.py`).
+3. Escribí el `Dockerfile` del backend y un `.dockerignore` (para que no entren en la imagen el `.venv` ni el `.env`).
+4. Creé el servicio en **Render** apuntando al repositorio y definí sus variables de entorno.
+5. Creé el proyecto en **Vercel** con la carpeta `frontend` y la variable `API_URL`.
+
+**El `Dockerfile` del backend:**
+- Parte de `python:3.12-slim` e instala las dependencias con `uv sync --frozen --no-dev`, es decir, exactamente lo que dice `uv.lock` y sin las herramientas de desarrollo.
+- Copia primero las dependencias y luego el código: si solo cambio código, Docker reutiliza la capa de librerías.
+- Al arrancar ejecuta `alembic upgrade head` (aplica las migraciones pendientes) y después `fastapi run` en el puerto que le asigna Render.
+
+**CORS:** el navegador solo deja que una web llame a una API de otra dirección si esa API lo autoriza. La API lee `CORS_ORIGINS` y autoriza a `localhost:3000` y a la web de Vercel. Para el listado de promociones no hace falta (la petición sale del servidor de Next.js), pero será imprescindible para el formulario, que se enviará desde el navegador.
+
+**Limitación del plan gratuito:** Render duerme el servicio tras 15 minutos sin uso, así que la primera petición tarda cerca de un minuto en responder.
+
+</details>
+
+<br>
+<br>
+<br>
+
+
+# 📓 Diario de desarrollo
+
+Aquí cuento, paso a paso y en el orden en que lo hice, qué construí, cómo funciona y por qué.
+
+## **Pre-instalaciones y creación del proyecto**
+<details>
 <summary><b>¿Cómo monté el proyecto?</b></summary>
 
 ### 1. Instalaciones en PowerShell y creación
@@ -328,14 +455,8 @@ Para que quien clone tu repo sepa qué datos hacen falta, subes también un arch
 
 </details>
 
-<br>
-<br>
-<br>
-
-# 📓 Diario de desarrollo
-
 ## **Modelado de Datos**
-<details open>
+<details>
 <summary><b>Explicación de la Base de Datos y sus pasos</b></summary>  
 La base de datos tiene 5 tablas.
 La persona ('clientes') está separada de su interés en una promoción ('oportunidad'), de modo que un mismo cliente puede terner varias oportunidades sin repetir sus datos.
@@ -478,27 +599,12 @@ Me avisó de dos cosas: que `datetime.UTC` sustituye a `timezone.utc` desde Pyth
 </details>
 
 ## **Datos de prueba y primer endpoint**
+<details>
+<summary><b>De la base de datos a la respuesta en el navegador</b></summary>
 El flujo seguido es: Datos en la BBDD → endpoint en la API → respuesta en el navegador. 
 Con esto queda comprobado que PostgreSQL, los modelos y FastAPI funcionan juntos. 
 
-### ¿Cuál es el recorrido de una petición?
-Si abro, por ejemplo, la dirección `ttp://127.0.0.1:8000/promociones` ocurre lo siguiente:
 
-```text
-Navegador  →  GET /promociones
-   ↓
-main.py        enruta la petición al router de promociones (por su prefijo)
-   ↓
-routers/promociones.py    ejecuta la función listar_promociones
-   ↓
-database.py    get_session() abre una sesión con PostgreSQL
-   ↓
-PostgreSQL     devuelve las filas de la tabla promociones
-   ↓
-schemas.py     PromocionRead decide qué campos salen y los convierte a JSON
-   ↓
-Navegador  ←  respuesta JSON
-```
 ### ¿Qué se ha creado y como?
 
 Archivos que se han creado nuevos: 
@@ -520,3 +626,23 @@ Códigos de respuesta que aparecen:
 - 422 (dato inválido, por ejemplo /promociones/abc, porque FastAPI valida que el id sea un entero).
 
 FastAPI genera una documentación interactiva en http://127.0.0.1:8000/docs. Desde ahí se puede probar cada endpoint con el botón Try it out, sin escribir código.
+</details>
+
+## **Frontend conectado a la API**
+<details>
+<summary><b>La web con las promociones</b></summary>
+
+**CORS en el backend.** En `main.py` añadí `CORSMiddleware`, que indica qué direcciones web pueden llamar a la API desde el navegador. Los orígenes permitidos se leen de la variable `CORS_ORIGINS` (en `config.py`), con `http://localhost:3000` por defecto.
+
+**`frontend/src/lib/api.ts`.** Una pequeña capa que llama a la API:
+- Lee la dirección de la API de la variable `API_URL` (por defecto `http://127.0.0.1:8000`).
+- Define el tipo `Promocion`, el equivalente en TypeScript de `PromocionRead`.
+- `getPromociones()` hace la petición con `fetch` y `cache: "no-store"` (datos frescos en cada visita).
+- `precio_desde` llega como texto, porque la API envía los decimales como cadena.
+
+**`frontend/src/app/page.tsx`.** La página de inicio es un **componente de servidor**: una función `async` que espera los datos de la API y devuelve JSX (HTML dentro de TypeScript). Recorre las promociones con `.map()` y dibuja una tarjeta por cada una, con la etiqueta VPO, la zona, la descripción, el precio formateado en euros con `Intl.NumberFormat` y el número de viviendas. Los estilos son clases de Tailwind y ya es responsive (una columna en móvil, dos en pantallas medianas y tres en grandes).
+
+También cambié en `layout.tsx` el idioma a `es` y el título y la descripción de la página.
+
+La dirección de la API en local va en `frontend/.env.local`, que Git ignora.
+</details>

@@ -10,10 +10,14 @@ export type Promocion = {
   num_viviendas: number | null;
 };
 
-export async function getPromociones(): Promise<Promocion[]> {
-  const res = await fetch(`${API_URL}/promociones`, { cache: "no-store" });
+export async function getPromocion(id: string): Promise<Promocion | null> {
+  const res = await fetch(`${API_URL}/promociones/${id}`, { cache: "no-store" });
+  // 404: no existe. 422: el id no es un número (por ejemplo /promociones/abc)
+  if (res.status === 404 || res.status === 422) {
+    return null;
+  }
   if (!res.ok) {
-    throw new Error("No se pudieron cargar las promociones");
+    throw new Error("No se pudo cargar la promoción");
   }
   return res.json();
 }
